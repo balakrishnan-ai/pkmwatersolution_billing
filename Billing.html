@@ -1,0 +1,927 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PKM Water Solution - Quotation Generator</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <style>
+        :root {
+            --primary: #0A3D3D;
+            --primary-light: #0E5C5C;
+            --primary-dark: #072B2B;
+            --primary-glow: rgba(10,61,61,0.06);
+            --accent: #C8962E;
+            --accent-light: #e8c36a;
+            --text: #1a1a1a;
+            --text-light: #666;
+            --border: #333;
+            --border-light: #c8c8c8;
+            --bg: #ddd8d0;
+            --white: #ffffff;
+            --row-alt: #f8f8f6;
+            --danger: #b52a1c;
+            --success: #1e8449;
+        }
+        *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+        html{font-size:14px}
+        body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);line-height:1.5;min-height:100vh}
+
+        /* ===== Background ===== */
+        .page-wrapper{
+            display:flex;justify-content:center;padding:24px 10px 60px;
+            background:var(--bg);
+            background-image:
+                radial-gradient(ellipse at 15% 30%,rgba(10,61,61,0.04) 0%,transparent 55%),
+                radial-gradient(ellipse at 85% 70%,rgba(200,150,46,0.05) 0%,transparent 55%),
+                radial-gradient(ellipse at 50% 0%,rgba(10,61,61,0.03) 0%,transparent 40%);
+        }
+
+        /* ===== Toolbar ===== */
+        .toolbar{
+            position:sticky;top:0;z-index:100;
+            background:linear-gradient(180deg,var(--primary-dark),var(--primary));
+            border-bottom:3px solid var(--accent);
+            padding:10px 16px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;
+            box-shadow:0 3px 18px rgba(0,0,0,0.35);
+        }
+        .toolbar-brand{font-weight:900;font-size:14px;color:#fff;margin-right:12px;letter-spacing:.6px;white-space:nowrap}
+        .toolbar-brand i{color:var(--accent);margin-right:5px}
+        .tb-sep{width:1px;height:26px;background:rgba(255,255,255,0.12);margin:0 6px}
+        .toolbar button{
+            font-family:'Outfit',sans-serif;font-size:11.5px;font-weight:700;
+            padding:7px 13px;border:none;border-radius:5px;cursor:pointer;
+            display:inline-flex;align-items:center;gap:5px;transition:all .2s;letter-spacing:.3px;
+        }
+        .toolbar button i{font-size:12px}
+        .tb-new{background:rgba(255,255,255,.08);color:#ccc}
+        .tb-new:hover{background:rgba(255,255,255,.18);color:#fff}
+        .tb-save{background:var(--success);color:#fff}
+        .tb-save:hover{background:#176a3a}
+        .tb-load{background:#2471a3;color:#fff}
+        .tb-load:hover{background:#1a5276}
+        .tb-print{background:var(--accent);color:#fff}
+        .tb-print:hover{background:#b8860b}
+        .tb-pdf{background:#7d3c98;color:#fff}
+        .tb-pdf:hover{background:#6c3483}
+        .tb-spacer{flex:1}
+        .tb-hint{color:rgba(255,255,255,.3);font-size:10.5px;font-weight:400}
+
+        /* ===== Page ===== */
+        .page{
+            width:100%;max-width:210mm;background:var(--white);
+            box-shadow:0 6px 40px rgba(0,0,0,.15),0 1px 3px rgba(0,0,0,.1);
+            padding:12mm 14mm 10mm;position:relative;overflow:hidden;
+        }
+        /* Watermark */
+        .watermark{
+            position:absolute;top:50%;left:50%;
+            transform:translate(-50%,-50%) rotate(-30deg);
+            font-size:90px;font-weight:900;color:rgba(10,61,61,.025);
+            white-space:nowrap;pointer-events:none;z-index:0;
+            letter-spacing:12px;
+        }
+        .page>*{position:relative;z-index:1}
+
+        /* ===== Header ===== */
+        .doc-header{
+            border:2px solid var(--border);padding:14px 16px;
+            display:flex;justify-content:space-between;align-items:center;gap:14px;
+        }
+        .doc-header::after{
+            content:'';position:absolute;bottom:-2px;left:0;right:0;height:3px;
+            background:linear-gradient(90deg,var(--primary),var(--accent),var(--primary));
+            z-index:2;
+        }
+        .h-left{flex:1}
+        .co-name{font-size:21px;font-weight:900;color:var(--primary);letter-spacing:1.2px;text-transform:uppercase;line-height:1.15}
+        .co-tag{font-size:9.5px;font-weight:800;color:var(--accent);letter-spacing:3px;text-transform:uppercase;margin-top:1px}
+        .co-info{margin-top:8px;font-size:10.5px;color:var(--text-light);line-height:1.55}
+        .co-info .pan{font-weight:800;color:var(--text);margin-top:2px;font-size:10px}
+        /* Logo */
+        .logo-wrap{
+            position:relative;width:82px;height:82px;flex-shrink:0;cursor:pointer;
+            border-radius:50%;overflow:hidden;
+        }
+        .logo-wrap img{width:100%;height:100%;object-fit:contain;display:block}
+        .logo-svg{width:100%;height:100%}
+        .logo-hover{
+            position:absolute;inset:0;background:rgba(0,0,0,.5);
+            display:flex;align-items:center;justify-content:center;
+            opacity:0;transition:opacity .25s;border-radius:50%;color:#fff;font-size:18px;
+        }
+        .logo-wrap:hover .logo-hover{opacity:1}
+        .logo-remove{
+            position:absolute;top:2px;right:2px;width:20px;height:20px;
+            background:var(--danger);color:#fff;border:none;border-radius:50%;
+            font-size:10px;cursor:pointer;display:none;align-items:center;justify-content:center;
+            z-index:3;line-height:1;
+        }
+        .logo-wrap:hover .logo-remove.has-img{display:flex}
+
+        /* ===== Title Bar ===== */
+        .title-bar{
+            background:linear-gradient(135deg,var(--primary-dark) 0%,var(--primary) 50%,var(--primary-light) 100%);
+            color:var(--white);text-align:center;font-size:17px;font-weight:900;
+            letter-spacing:8px;padding:8px 0;margin-top:10px;text-transform:uppercase;
+            box-shadow:inset 0 -1px 0 rgba(255,255,255,.1);
+        }
+
+        /* ===== Meta ===== */
+        .meta{display:grid;grid-template-columns:1fr 1fr 1fr;border:1px solid var(--border);border-top:none}
+        .meta-cell{padding:7px 12px;border-right:1px solid var(--border)}
+        .meta-cell:last-child{border-right:none}
+        .meta-cell label{display:block;font-size:9.5px;font-weight:800;color:var(--text-light);text-transform:uppercase;letter-spacing:.8px;margin-bottom:2px}
+        .mi{width:100%;border:1px solid transparent;background:0 0;font-family:'Outfit',sans-serif;font-size:12.5px;font-weight:600;color:var(--text);padding:2px 0;outline:0;transition:.2s}
+        .mi:hover{border-color:#e0e0e0}
+        .mi:focus{border-color:var(--primary);background:#fafaf8}
+        input[type="date"].mi{cursor:text}
+        input[type="date"].mi::-webkit-calendar-picker-indicator{opacity:.35;cursor:pointer}
+        .mv{display:none;font-size:12.5px;font-weight:600;color:var(--text)}
+
+        /* ===== Bill/Ship ===== */
+        .bs{display:grid;grid-template-columns:1fr 1fr;border:1px solid var(--border);border-top:none}
+        .bs-box{padding:8px 12px}
+        .bs-box:first-child{border-right:1px solid var(--border)}
+        .bs-label{font-size:9.5px;font-weight:800;color:var(--text-light);text-transform:uppercase;letter-spacing:.8px;margin-bottom:4px}
+        .bs-ta{
+            width:100%;border:1px solid transparent;background:0 0;
+            font-family:'Outfit',sans-serif;font-size:11.5px;color:var(--text);
+            line-height:1.5;resize:none;overflow:hidden;outline:0;min-height:55px;padding:0;transition:.2s;
+        }
+        .bs-ta:hover{border-color:#e0e0e0}
+        .bs-ta:focus{border-color:var(--primary);background:#fafaf8}
+        .bv{display:none;font-size:11.5px;color:var(--text);line-height:1.5}
+
+        /* ===== Items Table ===== */
+        .it{width:100%;border-collapse:collapse;border:1px solid var(--border);border-top:none;font-size:11.5px}
+        .it thead th{
+            background:linear-gradient(180deg,var(--primary-light),var(--primary));
+            color:#fff;font-weight:800;font-size:10px;text-transform:uppercase;
+            letter-spacing:.7px;padding:7px 5px;text-align:center;
+            border:1px solid rgba(255,255,255,.1);
+        }
+        .it thead th:nth-child(2){text-align:left;padding-left:8px}
+        .it tbody td{border:1px solid var(--border-light);padding:0;vertical-align:middle}
+        .it tbody tr:nth-child(even){background:var(--row-alt)}
+        .it tbody tr:hover{background:#eaf3f3}
+        .c-sno{width:36px;text-align:center!important}
+        .c-item{width:auto}
+        .c-qty{width:44px}
+        .c-unit{width:44px}
+        .c-rate{width:80px}
+        .c-disc{width:100px}
+        .c-total{width:90px}
+        .c-act{width:30px}
+        .sno{display:block;text-align:center;font-weight:700;padding:5px 3px;font-size:11.5px}
+        .ci{
+            width:100%;border:1px solid transparent;background:0 0;
+            font-family:'Outfit',sans-serif;font-size:11.5px;color:var(--text);
+            padding:5px 4px;text-align:right;outline:0;transition:.2s;
+        }
+        .ci:hover{border-color:#e0e0e0}
+        .ci:focus{border-color:var(--primary);background:#fafaf8}
+        .ci.ctr{text-align:center}
+        .ci::-webkit-inner-spin-button,.ci::-webkit-outer-spin-button{-webkit-appearance:none}
+        .ci[type="number"]{-moz-appearance:textfield}
+        .idesc{
+            width:100%;border:1px solid transparent;background:0 0;
+            font-family:'Outfit',sans-serif;font-size:11.5px;color:var(--text);
+            line-height:1.4;resize:none;overflow:hidden;outline:0;
+            padding:5px 7px;min-height:28px;transition:.2s;
+        }
+        .idesc:hover{border-color:#e0e0e0}
+        .idesc:focus{border-color:var(--primary);background:#fafaf8}
+        .dw{padding:3px 4px;text-align:right}
+        .di{
+            width:100%;border:1px solid transparent;background:0 0;
+            font-family:'Outfit',sans-serif;font-size:11.5px;color:var(--text);
+            padding:2px 0;text-align:right;outline:0;transition:.2s;
+        }
+        .di:hover{border-color:#e0e0e0}
+        .di:focus{border-color:var(--primary);background:#fafaf8}
+        .di::-webkit-inner-spin-button,.di::-webkit-outer-spin-button{-webkit-appearance:none}
+        .di[type="number"]{-moz-appearance:textfield}
+        .da{display:block;font-size:9px;color:var(--text-light);margin-top:1px}
+        .dp{display:none;font-size:10.5px;text-align:right;padding:5px 4px;color:var(--text)}
+        .tc{display:block;text-align:right;font-weight:700;padding:5px 7px;white-space:nowrap}
+        .bd{
+            width:22px;height:22px;border:none;background:0 0;color:#ccc;cursor:pointer;
+            font-size:13px;border-radius:3px;transition:.2s;display:flex;align-items:center;
+            justify-content:center;margin:0 auto;
+        }
+        .bd:hover{color:var(--danger);background:#fde8e8}
+        /* Subtotal */
+        .st-row td{border:1px solid var(--border);padding:7px 7px;font-weight:800;font-size:11.5px;background:#ededea}
+        .st-lbl{text-align:right!important;padding-right:10px!important}
+        /* Add row */
+        .ar-row td{border:1px dashed var(--border-light);padding:7px;text-align:center;background:0 0}
+        .btn-add{
+            font-family:'Outfit',sans-serif;font-size:11.5px;font-weight:700;
+            color:var(--primary);background:0 0;border:1px dashed var(--primary);
+            padding:5px 18px;border-radius:5px;cursor:pointer;transition:.2s;
+            display:inline-flex;align-items:center;gap:5px;
+        }
+        .btn-add:hover{background:var(--primary);color:#fff;border-style:solid}
+        .empty-s{text-align:center;padding:22px 10px;color:#bbb;font-size:11.5px;font-style:italic}
+
+        /* ===== Terms ===== */
+        .terms{border:1px solid var(--border);border-top:none;padding:10px 14px}
+        .sec-lbl{font-size:9.5px;font-weight:800;color:var(--text-light);text-transform:uppercase;letter-spacing:.8px;margin-bottom:5px}
+        .terms-ta{
+            width:100%;border:1px solid transparent;background:0 0;
+            font-family:'Outfit',sans-serif;font-size:11px;color:var(--text);
+            line-height:1.6;resize:none;overflow:hidden;outline:0;min-height:50px;padding:0;transition:.2s;
+        }
+        .terms-ta:hover{border-color:#e0e0e0}
+        .terms-ta:focus{border-color:var(--primary);background:#fafaf8}
+        .terms-d{display:none;font-size:11px;color:var(--text);line-height:1.6}
+        .terms-d ol{padding-left:18px;margin:0}
+        .terms-d li{margin-bottom:1px}
+
+        /* ===== Amount ===== */
+        .amt-sec{margin-top:14px}
+        .amt-line{font-size:14px;font-weight:900;color:var(--text);margin-bottom:4px}
+        .amt-line span{color:var(--primary);font-size:15px}
+        .amt-w-label{font-size:10.5px;font-weight:700;color:var(--text-light)}
+        .amt-w-val{font-size:11.5px;font-weight:600;color:var(--text);font-style:italic;margin-top:1px}
+
+        /* ===== Signature ===== */
+        .sig-area{display:flex;justify-content:space-between;margin-top:28px;gap:16px}
+        .sig-block{text-align:center;min-width:140px}
+        .sig-lbl{font-size:10.5px;font-weight:600;color:var(--text-light);margin-bottom:36px}
+        /* Signature upload */
+        .sig-upload{
+            position:relative;cursor:pointer;border:1px dashed #ccc;border-radius:6px;
+            padding:8px 16px;min-height:60px;display:flex;align-items:center;justify-content:center;
+            transition:.2s;
+        }
+        .sig-upload:hover{border-color:var(--primary);background:#f8fafa}
+        .sig-upload img{max-height:50px;max-width:140px;object-fit:contain}
+        .sig-upload .sig-ph{
+            color:#ccc;font-size:10px;display:flex;flex-direction:column;
+            align-items:center;gap:4px;
+        }
+        .sig-upload .sig-ph i{font-size:20px}
+        .sig-upload .sig-hover{
+            position:absolute;inset:0;background:rgba(0,0,0,.45);
+            display:flex;align-items:center;justify-content:center;
+            opacity:0;transition:.2s;border-radius:6px;color:#fff;font-size:11px;font-weight:600;
+        }
+        .sig-upload:hover .sig-hover{opacity:1}
+        .sig-upload .sig-rm{
+            position:absolute;top:-6px;right:-6px;width:18px;height:18px;
+            background:var(--danger);color:#fff;border:2px solid #fff;border-radius:50%;
+            font-size:8px;cursor:pointer;display:none;align-items:center;justify-content:center;z-index:3;
+        }
+        .sig-upload.has-sig .sig-rm{display:flex}
+        .sig-line{width:140px;height:1px;border-bottom:1px solid var(--border);margin:6px auto 4px}
+        .sig-name{font-size:12.5px;font-weight:900;color:var(--primary)}
+        .sig-sub{font-size:9px;font-weight:700;color:var(--text-light);letter-spacing:1.5px;text-transform:uppercase;margin-top:2px}
+
+        /* ===== Footer ===== */
+        .doc-foot{margin-top:18px;padding-top:8px;border-top:2.5px solid var(--primary);text-align:center;font-size:9.5px;color:var(--text-light);line-height:1.55}
+
+        /* ===== Modal ===== */
+        .modal-ov{
+            position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.55);
+            display:none;align-items:center;justify-content:center;padding:20px;
+            backdrop-filter:blur(3px);
+        }
+        .modal-ov.on{display:flex}
+        .modal{
+            background:#fff;border-radius:12px;width:100%;max-width:540px;max-height:78vh;
+            box-shadow:0 24px 60px rgba(0,0,0,.35);display:flex;flex-direction:column;
+            animation:mIn .25s ease;
+        }
+        @keyframes mIn{from{opacity:0;transform:translateY(16px) scale(.97)}to{opacity:1;transform:none}}
+        .modal-hd{padding:14px 18px;border-bottom:1px solid #eee;display:flex;justify-content:space-between;align-items:center}
+        .modal-hd h3{font-size:15px;font-weight:900;color:var(--primary)}
+        .modal-cls{width:28px;height:28px;border:none;background:#f5f5f5;border-radius:50%;cursor:pointer;font-size:15px;color:#999;display:flex;align-items:center;justify-content:center;transition:.2s}
+        .modal-cls:hover{background:#eee;color:#333}
+        .modal-bd{padding:10px 18px;overflow-y:auto;flex:1}
+        .modal-empty{text-align:center;padding:36px 18px;color:#bbb;font-size:12px}
+        .modal-empty i{font-size:32px;display:block;margin-bottom:10px;color:#ddd}
+        .si{
+            display:flex;align-items:center;gap:10px;padding:10px;
+            border:1px solid #eee;border-radius:8px;margin-bottom:7px;transition:.2s;
+        }
+        .si:hover{border-color:var(--primary);background:#f9f9f8}
+        .si-info{flex:1}
+        .si-q{font-weight:800;font-size:12.5px;color:var(--text)}
+        .si-d{font-size:10.5px;color:var(--text-light);margin-top:1px}
+        .si-acts{display:flex;gap:5px}
+        .si-acts button{font-family:'Outfit',sans-serif;font-size:10.5px;font-weight:700;padding:4px 10px;border:none;border-radius:4px;cursor:pointer;transition:.2s}
+        .si-load{background:var(--primary);color:#fff}
+        .si-load:hover{background:var(--primary-light)}
+        .si-del{background:#fde8e8;color:var(--danger)}
+        .si-del:hover{background:#f8c8c8}
+
+        /* ===== Toast ===== */
+        .toast-c{position:fixed;bottom:20px;right:20px;z-index:300;display:flex;flex-direction:column-reverse;gap:6px}
+        .toast{
+            padding:10px 18px;border-radius:8px;font-size:12.5px;font-weight:600;
+            color:#fff;box-shadow:0 4px 14px rgba(0,0,0,.2);
+            animation:tIn .3s ease,tOut .3s ease 2.4s forwards;
+            display:flex;align-items:center;gap:7px;max-width:320px;
+        }
+        .toast.ok{background:var(--success)}
+        .toast.err{background:var(--danger)}
+        .toast.inf{background:#2471a3}
+        @keyframes tIn{from{opacity:0;transform:translateX(30px)}to{opacity:1;transform:none}}
+        @keyframes tOut{to{opacity:0;transform:translateY(8px)}}
+
+        /* ===== Print ===== */
+        @media print{
+            html{font-size:10.5px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+            body{background:#fff}
+            .toolbar,.no-print,.bd,.ar-row,.logo-hover,.logo-remove,.sig-hover,.sig-rm,.sig-upload .sig-ph{display:none!important}
+            .page{box-shadow:none;margin:0;padding:0;max-width:none;width:100%}
+            .page-wrapper{padding:0;background:#fff}
+            @page{size:A4;margin:12mm 14mm}
+            .mi,.bs-ta,.terms-ta,.idesc,.ci,.di,.da{display:none!important}
+            .dp{display:block!important}
+            .mv,.bv,.terms-d{display:block!important}
+            .c-act{display:none!important}
+            .it thead th{font-size:9px;padding:5px 3px}
+            .st-row td{background:#ededea!important}
+            .title-bar{background:var(--primary)!important}
+            .doc-header::after{display:none}
+            .doc-header,.meta,.bs,.it,.terms{border-color:#000!important;border-top:1px solid #000!important}
+            .it thead th{border-color:rgba(0,0,0,.3)!important}
+            .it tbody td{border-color:#888!important}
+            .st-row td{border-color:#000!important}
+            .doc-foot{border-top-color:#000!important}
+            .logo-wrap{cursor:default;border:2px solid var(--primary);border-radius:50%;overflow:hidden}
+            .sig-upload{border:none!important;padding:4px 0!important;cursor:default}
+            .sig-upload:hover{background:transparent!important}
+            .doc-header,.title-bar,.meta,.bs,.terms,.amt-sec,.sig-area{page-break-inside:avoid}
+            tr{page-break-inside:avoid}
+            .watermark{display:none}
+        }
+        .mv,.bv,.terms-d{display:none}
+        @media screen and (max-width:700px){
+            .page{padding:6mm 5mm}
+            .doc-header{flex-direction:column;align-items:flex-start}
+            .logo-wrap{align-self:center}
+            .co-name{font-size:17px}
+            .meta{grid-template-columns:1fr}
+            .meta-cell{border-right:none;border-bottom:1px solid var(--border)}
+            .meta-cell:last-child{border-bottom:none}
+            .bs{grid-template-columns:1fr}
+            .bs-box:first-child{border-right:none;border-bottom:1px solid var(--border)}
+            .sig-area{flex-direction:column;align-items:center}
+            .toolbar{padding:7px 10px;gap:4px}
+            .toolbar-brand{font-size:12px;margin-right:6px}
+            .toolbar button{padding:5px 8px;font-size:10.5px}
+            .tb-sep{display:none}
+            .it{font-size:10.5px}
+            .c-rate{width:65px}.c-disc{width:80px}.c-total{width:75px}
+        }
+    </style>
+</head>
+<body>
+
+<!-- Toolbar -->
+<div class="toolbar no-print" role="toolbar">
+    <div class="toolbar-brand"><i class="fas fa-droplet"></i> PKM Quotations</div>
+    <div class="tb-sep"></div>
+    <button class="tb-new" onclick="newQuotation()"><i class="fas fa-file-circle-plus"></i> New</button>
+    <button class="tb-save" onclick="saveQuotation()"><i class="fas fa-floppy-disk"></i> Save</button>
+    <button class="tb-load" onclick="openModal()"><i class="fas fa-folder-open"></i> Load</button>
+    <div class="tb-sep"></div>
+    <button class="tb-print" onclick="printQuotation()"><i class="fas fa-print"></i> Print</button>
+    <button class="tb-pdf" onclick="exportPDF()"><i class="fas fa-file-pdf"></i> PDF</button>
+    <div class="tb-spacer"></div>
+    <span class="tb-hint">Ctrl+S Save &nbsp;|&nbsp; Ctrl+P Print</span>
+</div>
+
+<!-- Page -->
+<div class="page-wrapper">
+<div class="page" id="qPage">
+    <div class="watermark">PKM WATER SOLUTION</div>
+
+    <!-- Header -->
+    <header class="doc-header">
+        <div class="h-left">
+            <div class="co-name">PKM Water Solution</div>
+            <div class="co-tag">Water Solution &bull; Scale Remover</div>
+            <div class="co-info">
+                <p>Anna Nagar 4th Street, Korakkarnathar Kovil Opposite,</p>
+                <p>Thiruppuvanam, Sivagangai District.</p>
+                <p>Ph : 9342803692 &nbsp;|&nbsp; pkmwatersolution23@gmail.com</p>
+                <p class="pan">PAN No : EWDPP9950B</p>
+            </div>
+        </div>
+        <div class="logo-wrap" id="logoWrap" onclick="triggerLogoUpload()" title="Click to upload logo">
+            <!-- SVG default logo -->
+            <svg class="logo-svg" id="logoSvg" viewBox="0 0 100 100">
+                <circle cx="50" cy="50" r="47" fill="none" stroke="#0A3D3D" stroke-width="2.5"/>
+                <path d="M50 18 C50 18 28 44 28 58 C28 69.5 38 79 50 79 C62 79 72 69.5 72 58 C72 44 50 18 50 18Z" fill="rgba(10,61,61,0.08)" stroke="#0A3D3D" stroke-width="1.5" stroke-linejoin="round"/>
+                <text x="50" y="56" text-anchor="middle" font-family="Outfit,sans-serif" font-weight="900" font-size="20" fill="#0A3D3D">PKM</text>
+                <text x="50" y="70" text-anchor="middle" font-family="Outfit,sans-serif" font-weight="700" font-size="7.5" fill="#C8962E" letter-spacing="2">WATER</text>
+            </svg>
+            <img id="logoImg" style="display:none" alt="Company Logo">
+            <div class="logo-hover no-print"><i class="fas fa-camera"></i></div>
+            <button class="logo-remove no-print" id="logoRmBtn" onclick="removeLogo(event)" title="Remove logo"><i class="fas fa-xmark"></i></button>
+            <input type="file" id="logoInput" accept="image/*" hidden>
+        </div>
+    </header>
+
+    <!-- Title -->
+    <div class="title-bar">Quotation</div>
+
+    <!-- Meta -->
+    <div class="meta">
+        <div class="meta-cell"><label>Quotation No.</label><input type="text" class="mi" id="qNo" value="028"><span class="mv" id="qNoV"></span></div>
+        <div class="meta-cell"><label>Quotation Date</label><input type="date" class="mi" id="qDate" value="2026-03-30"><span class="mv" id="qDateV"></span></div>
+        <div class="meta-cell"><label>Expiry Date</label><input type="date" class="mi" id="qExp" value="2026-05-01"><span class="mv" id="qExpV"></span></div>
+    </div>
+
+    <!-- Bill/Ship -->
+    <div class="bs">
+        <div class="bs-box"><div class="bs-label">Bill To</div><textarea class="bs-ta" id="billTo" rows="4">Mr.Selvaraj,
+Kattaikalaipatti, Melur.
+Madurai.
+Ph : 93455-92810.</textarea><div class="bv" id="billToV"></div></div>
+        <div class="bs-box"><div class="bs-label">Ship To</div><textarea class="bs-ta" id="shipTo" rows="4">Mr.Selvaraj</textarea><div class="bv" id="shipToV"></div></div>
+    </div>
+
+    <!-- Table -->
+    <table class="it" aria-label="Line items">
+        <thead><tr>
+            <th class="c-sno">S.No</th>
+            <th class="c-item">Items / Service</th>
+            <th class="c-qty">Qty</th>
+            <th class="c-unit">Unit</th>
+            <th class="c-rate">Rate</th>
+            <th class="c-disc">Disc.</th>
+            <th class="c-total">Total</th>
+            <th class="c-act no-print"></th>
+        </tr></thead>
+        <tbody id="tBody"></tbody>
+        <tfoot id="tFoot"></tfoot>
+    </table>
+
+    <!-- Terms -->
+    <div class="terms">
+        <div class="sec-lbl">Terms &amp; Conditions</div>
+        <textarea class="terms-ta" id="termsTa" rows="4">1. Electricity and water required for the work should be provided by the client.
+2. Any Additional Work to be carried out should be arranged and paid by the customer separately.
+3. The above mentioned Price is excluded of GST.</textarea>
+        <div class="terms-d" id="termsD"></div>
+    </div>
+
+    <!-- Amount -->
+    <div class="amt-sec">
+        <div class="amt-line">Total Amount - <span id="amtText">Rs.0/-</span></div>
+        <div class="amt-w-label">Total Amount (in words)</div>
+        <div class="amt-w-val" id="amtWords">(Zero)</div>
+    </div>
+
+    <!-- Signature -->
+    <div class="sig-area">
+        <div class="sig-block">
+            <div class="sig-lbl">Signature</div>
+            <div class="sig-line"></div>
+        </div>
+        <div class="sig-block">
+            <div class="sig-upload" id="sigWrap" onclick="triggerSigUpload()" title="Click to upload signature">
+                <img id="sigImg" style="display:none" alt="Signature">
+                <div class="sig-ph no-print" id="sigPh"><i class="fas fa-signature"></i><span>Upload Signature</span></div>
+                <div class="sig-hover no-print"><i class="fas fa-camera" style="margin-right:5px"></i> Change</div>
+                <button class="sig-rm no-print" id="sigRmBtn" onclick="removeSig(event)" title="Remove"><i class="fas fa-xmark"></i></button>
+                <input type="file" id="sigInput" accept="image/*" hidden>
+            </div>
+            <div class="sig-name">PKM Water Solution</div>
+            <div class="sig-line"></div>
+            <div class="sig-sub">Quotation PKM</div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="doc-foot">
+        <p>pkmwatersolution23@gmail.com</p>
+        <p>Anna Nagar 4th Street, Korakkarnathar Kovil Opposite, Thiruppuvanam, Sivagangai District.</p>
+        <p>PAN No. EWDPP9950B</p>
+    </footer>
+</div>
+</div>
+
+<!-- Modal -->
+<div class="modal-ov" id="modal" role="dialog">
+    <div class="modal">
+        <div class="modal-hd"><h3><i class="fas fa-folder-open" style="margin-right:7px;color:var(--accent)"></i>Saved Quotations</h3><button class="modal-cls" onclick="closeModal()"><i class="fas fa-xmark"></i></button></div>
+        <div class="modal-bd" id="savedList"></div>
+    </div>
+</div>
+
+<!-- Toast -->
+<div class="toast-c" id="toastC"></div>
+
+<script>
+/* ============================================================
+   STATE
+   ============================================================ */
+let items = [];
+let ast = null; // auto-save timer
+const SK = 'pkm_quotations';
+const DK = 'pkm_draft';
+const LOGO_K = 'pkm_logo';
+const SIG_K = 'pkm_signature';
+
+const INIT_ITEMS = [
+    { description:'PKM Water Solution\n3000 LPH\nLenth-34", Diameter - 3",\nInlet & Outlet - 1.5"', qty:1, unit:'UNT', rate:92400, discount:39 },
+    { description:'20 inch jumbo\nFilters with 5 Micron\nBag', qty:1, unit:'PCS', rate:5500, discount:25 },
+    { description:'Flow Switch for\nScale Remover', qty:1, unit:'PCS', rate:2500, discount:20 },
+    { description:'Plumbing and\nElectric Materials', qty:1, unit:'UNT', rate:5000, discount:10 }
+];
+
+/* ============================================================
+   UTILITIES
+   ============================================================ */
+function pf(v){ const n=parseFloat(v); return isNaN(n)?0:n; }
+
+function fmtINR(n){
+    if(isNaN(n)||n===null) return '0';
+    const s=Math.round(n).toString();
+    if(s.length<=3) return s;
+    let r=s.slice(-3), rem=s.slice(0,-3);
+    while(rem.length>2){ r=rem.slice(-2)+','+r; rem=rem.slice(0,-2); }
+    if(rem.length>0) r=rem+','+r;
+    return r;
+}
+
+function toWords(n){
+    if(n===0) return 'Zero';
+    const o=['','One','Two','Three','Four','Five','Six','Seven','Eight','Nine','Ten','Eleven','Twelve','Thirteen','Fourteen','Fifteen','Sixteen','Seventeen','Eighteen','Nineteen'];
+    const t=['','','Twenty','Thirty','Forty','Fifty','Sixty','Seventy','Eighty','Ninety'];
+    function b100(n){ return n<20?o[n]:t[Math.floor(n/10)]+(n%10?' '+o[n%10]:''); }
+    function b1k(n){ return n<100?b100(n):o[Math.floor(n/100)]+' Hundred'+(n%100?' and '+b100(n%100):''); }
+    let r='';
+    if(n>=10000000){ r+=b100(Math.floor(n/10000000))+' Crore '; n%=10000000; }
+    if(n>=100000){ r+=b100(Math.floor(n/100000))+' Lakh '; n%=100000; }
+    if(n>=1000){ r+=b1k(Math.floor(n/1000))+' Thousand '; n%=1000; }
+    if(n>0) r+=b1k(n);
+    return r.trim();
+}
+
+function fmtDate(d){
+    if(!d) return '';
+    const dt=new Date(d+'T00:00:00');
+    return String(dt.getDate()).padStart(2,'0')+'/'+String(dt.getMonth()+1).padStart(2,'0')+'/'+dt.getFullYear();
+}
+
+function esc(s){ const d=document.createElement('div'); d.textContent=s||''; return d.innerHTML; }
+
+function autoH(el){ el.style.height='auto'; el.style.height=Math.max(28,el.scrollHeight)+'px'; }
+
+function calcItem(it){
+    const g=pf(it.qty)*pf(it.rate);
+    const d=g*Math.min(Math.max(pf(it.discount),0),100)/100;
+    return {gross:g,disc:d,net:g-d};
+}
+function calcTotals(){
+    let tg=0,td=0,tn=0;
+    items.forEach(it=>{ const c=calcItem(it); tg+=c.gross; td+=c.disc; tn+=c.net; });
+    return {tg,td,tn};
+}
+
+/* ============================================================
+   RENDER
+   ============================================================ */
+function renderItems(){
+    const tb=document.getElementById('tBody');
+    const tf=document.getElementById('tFoot');
+    if(!items.length){
+        tb.innerHTML='<tr><td colspan="8" class="empty-s">No items. Click "Add Item" below.</td></tr>';
+        tf.innerHTML=''; updateTotals(); return;
+    }
+    let h='';
+    items.forEach((it,i)=>{
+        const c=calcItem(it);
+        const dp=pf(it.discount);
+        h+=`<tr data-i="${i}">
+            <td class="c-sno"><span class="sno">${i+1}.</span></td>
+            <td class="c-item"><textarea class="idesc" rows="1" oninput="updItem(${i},'desc',this.value);autoH(this)" onfocus="autoH(this)">${esc(it.description)}</textarea></td>
+            <td class="c-qty"><input type="number" class="ci ctr" value="${it.qty}" min="0" step="1" oninput="updItem(${i},'qty',this.value)"></td>
+            <td class="c-unit"><input type="text" class="ci ctr" value="${esc(it.unit)}" maxlength="6" oninput="updItem(${i},'unit',this.value)" style="text-transform:uppercase"></td>
+            <td class="c-rate"><input type="number" class="ci" value="${it.rate}" min="0" step="0.01" oninput="updItem(${i},'rate',this.value)"></td>
+            <td class="c-disc">
+                <div class="dw no-print">
+                    <input type="number" class="di" value="${dp}" min="0" max="100" step="0.1" oninput="updItem(${i},'discount',this.value)">
+                    <span class="da">Rs.${fmtINR(c.disc)}</span>
+                </div>
+                <div class="dp">Rs.${fmtINR(c.disc)} (${dp}%)</div>
+            </td>
+            <td class="c-total"><span class="tc">Rs.${fmtINR(c.net)}</span></td>
+            <td class="c-act no-print"><button class="bd" onclick="rmItem(${i})" title="Remove" aria-label="Remove item ${i+1}"><i class="fas fa-xmark"></i></button></td>
+        </tr>`;
+    });
+    tb.innerHTML=h;
+    const t=calcTotals();
+    tf.innerHTML=`<tr class="st-row">
+        <td colspan="5" class="st-lbl">SUB TOTAL</td>
+        <td style="text-align:right;padding-right:6px">Rs.${fmtINR(t.td)}</td>
+        <td style="text-align:right;padding-right:8px">Rs.${fmtINR(t.tn)}</td>
+        <td class="no-print"></td>
+    </tr><tr class="ar-row no-print"><td colspan="8"><button class="btn-add" onclick="addItem()"><i class="fas fa-plus"></i> Add Item</button></td></tr>`;
+    tb.querySelectorAll('.idesc').forEach(autoH);
+    updateTotals();
+}
+
+function updateTotals(){
+    const t=calcTotals();
+    document.getElementById('amtText').textContent='Rs.'+fmtINR(t.tn)+'/-' ;
+    document.getElementById('amtWords').textContent='('+toWords(t.tn)+')';
+}
+
+function updatePV(){
+    document.getElementById('qNoV').textContent=document.getElementById('qNo').value;
+    document.getElementById('qDateV').textContent=fmtDate(document.getElementById('qDate').value);
+    document.getElementById('qExpV').textContent=fmtDate(document.getElementById('qExp').value);
+    document.getElementById('billToV').innerHTML=(document.getElementById('billTo').value||'').replace(/\n/g,'<br>');
+    document.getElementById('shipToV').innerHTML=(document.getElementById('shipTo').value||'').replace(/\n/g,'<br>');
+    const terms=document.getElementById('termsTa').value;
+    const lines=terms.split('\n').filter(l=>l.trim());
+    let th='';
+    lines.forEach(l=>{ const cl=l.replace(/^\d+\.\s*/,''); if(cl) th+='<li>'+esc(cl)+'</li>'; });
+    document.getElementById('termsD').innerHTML=th?'<ol>'+th+'</ol>':'';
+}
+
+/* ============================================================
+   ITEM OPS
+   ============================================================ */
+function addItem(d,q,u,r,di){
+    items.push({description:d||'',qty:q||1,unit:u||'UNT',rate:r||0,discount:di||0});
+    renderItems(); schedAS();
+    setTimeout(()=>{ const rows=document.querySelectorAll('#tBody tr[data-i]'); const lr=rows[rows.length-1]; if(lr){ const ta=lr.querySelector('.idesc'); if(ta){ta.focus();autoH(ta);} } },50);
+}
+function rmItem(i){
+    if(items.length<=1){ toast('At least one item required','err'); return; }
+    items.splice(i,1); renderItems(); schedAS(); toast('Item removed','inf');
+}
+function updItem(i,f,v){
+    if(!items[i]) return;
+    items[i][f==='desc'?'description':f]=v;
+    const row=document.querySelector(`tr[data-i="${i}"]`);
+    if(row){
+        const c=calcItem(items[i]);
+        const da=row.querySelector('.da');
+        const dp=row.querySelector('.dp');
+        const tc=row.querySelector('.tc');
+        if(da) da.textContent='Rs.'+fmtINR(c.disc);
+        if(dp) dp.textContent='Rs.'+fmtINR(c.disc)+' ('+pf(items[i].discount)+'%)';
+        if(tc) tc.textContent='Rs.'+fmtINR(c.net);
+    }
+    updateTotals();
+    const t=calcTotals();
+    const fc=document.querySelectorAll('.st-row td');
+    if(fc.length>=3){ fc[fc.length-2].textContent='Rs.'+fmtINR(t.td); fc[fc.length-1].textContent='Rs.'+fmtINR(t.tn); }
+    schedAS();
+}
+
+/* ============================================================
+   LOGO & SIGNATURE UPLOAD
+   ============================================================ */
+function triggerLogoUpload(){ document.getElementById('logoInput').click(); }
+function triggerSigUpload(){ document.getElementById('sigInput').click(); }
+
+document.getElementById('logoInput').addEventListener('change',function(e){
+    const file=e.target.files[0]; if(!file) return;
+    const reader=new FileReader();
+    reader.onload=function(ev){
+        const data=ev.target.result;
+        document.getElementById('logoImg').src=data;
+        document.getElementById('logoImg').style.display='block';
+        document.getElementById('logoSvg').style.display='none';
+        document.getElementById('logoRmBtn').classList.add('has-img');
+        localStorage.setItem(LOGO_K,data);
+        toast('Logo uploaded','ok');
+    };
+    reader.readAsDataURL(file);
+    e.target.value='';
+});
+
+document.getElementById('sigInput').addEventListener('change',function(e){
+    const file=e.target.files[0]; if(!file) return;
+    const reader=new FileReader();
+    reader.onload=function(ev){
+        const data=ev.target.result;
+        document.getElementById('sigImg').src=data;
+        document.getElementById('sigImg').style.display='block';
+        document.getElementById('sigPh').style.display='none';
+        document.getElementById('sigWrap').classList.add('has-sig');
+        localStorage.setItem(SIG_K,data);
+        toast('Signature uploaded','ok');
+    };
+    reader.readAsDataURL(file);
+    e.target.value='';
+});
+
+function removeLogo(e){
+    e.stopPropagation();
+    document.getElementById('logoImg').style.display='none';
+    document.getElementById('logoImg').src='';
+    document.getElementById('logoSvg').style.display='block';
+    document.getElementById('logoRmBtn').classList.remove('has-img');
+    localStorage.removeItem(LOGO_K);
+    toast('Logo removed','inf');
+}
+function removeSig(e){
+    e.stopPropagation();
+    document.getElementById('sigImg').style.display='none';
+    document.getElementById('sigImg').src='';
+    document.getElementById('sigPh').style.display='flex';
+    document.getElementById('sigWrap').classList.remove('has-sig');
+    localStorage.removeItem(SIG_K);
+    toast('Signature removed','inf');
+}
+
+function loadImages(){
+    const logo=localStorage.getItem(LOGO_K);
+    if(logo){
+        document.getElementById('logoImg').src=logo;
+        document.getElementById('logoImg').style.display='block';
+        document.getElementById('logoSvg').style.display='none';
+        document.getElementById('logoRmBtn').classList.add('has-img');
+    }
+    const sig=localStorage.getItem(SIG_K);
+    if(sig){
+        document.getElementById('sigImg').src=sig;
+        document.getElementById('sigImg').style.display='block';
+        document.getElementById('sigPh').style.display='none';
+        document.getElementById('sigWrap').classList.add('has-sig');
+    }
+}
+
+/* ============================================================
+   SAVE / LOAD
+   ============================================================ */
+function gather(){
+    return {
+        qNo:document.getElementById('qNo').value,
+        qDate:document.getElementById('qDate').value,
+        qExp:document.getElementById('qExp').value,
+        billTo:document.getElementById('billTo').value,
+        shipTo:document.getElementById('shipTo').value,
+        items:JSON.parse(JSON.stringify(items)),
+        terms:document.getElementById('termsTa').value
+    };
+}
+function loadD(d){
+    document.getElementById('qNo').value=d.qNo||'';
+    document.getElementById('qDate').value=d.qDate||'';
+    document.getElementById('qExp').value=d.qExp||'';
+    document.getElementById('billTo').value=d.billTo||'';
+    document.getElementById('shipTo').value=d.shipTo||'';
+    document.getElementById('termsTa').value=d.terms||'';
+    items=d.items?JSON.parse(JSON.stringify(d.items)):[];
+    renderItems(); updatePV(); autoHAll();
+}
+function autoHAll(){ document.querySelectorAll('.bs-ta,.terms-ta,.idesc').forEach(autoH); }
+
+function saveQuotation(){
+    const d=gather(); const s=getSL();
+    const ei=s.findIndex(x=>x.qNo===d.qNo);
+    if(ei!==-1){ s[ei]={...d,at:Date.now()}; toast('Quotation #'+d.qNo+' updated','ok'); }
+    else{ s.unshift({...d,at:Date.now()}); toast('Quotation #'+d.qNo+' saved','ok'); }
+    localStorage.setItem(SK,JSON.stringify(s));
+}
+function getSL(){ try{return JSON.parse(localStorage.getItem(SK))||[];}catch{return [];} }
+
+function delSaved(i){
+    const s=getSL(); if(!s[i]) return;
+    const no=s[i].qNo; s.splice(i,1);
+    localStorage.setItem(SK,JSON.stringify(s)); renderSL(); toast('Quotation #'+no+' deleted','inf');
+}
+function loadSaved(i){
+    const s=getSL(); if(!s[i]) return;
+    loadD(s[i]); closeModal(); toast('Quotation #'+s[i].qNo+' loaded','ok');
+}
+
+function schedAS(){ clearTimeout(ast); ast=setTimeout(()=>{ localStorage.setItem(DK,JSON.stringify(gather())); },700); }
+function loadDraft(){
+    try{ const d=JSON.parse(localStorage.getItem(DK)); if(d&&d.items&&d.items.length>0){ loadD(d); return true; } }catch{}
+    return false;
+}
+
+/* ============================================================
+   NEW
+   ============================================================ */
+function newQuotation(){
+    const s=getSL(); let nx=1;
+    s.forEach(x=>{ const n=parseInt(x.qNo); if(!isNaN(n)&&n>=nx) nx=n+1; });
+    const td=new Date(), ed=new Date(); ed.setDate(ed.getDate()+30);
+    document.getElementById('qNo').value=String(nx).padStart(3,'0');
+    document.getElementById('qDate').value=td.toISOString().split('T')[0];
+    document.getElementById('qExp').value=ed.toISOString().split('T')[0];
+    document.getElementById('billTo').value='';
+    document.getElementById('shipTo').value='';
+    document.getElementById('termsTa').value='1. Electricity and water required for the work should be provided by the client.\n2. Any Additional Work to be carried out should be arranged and paid by the customer separately.\n3. The above mentioned Price is excluded of GST.';
+    items=[{description:'',qty:1,unit:'UNT',rate:0,discount:0}];
+    renderItems(); updatePV(); autoHAll(); localStorage.removeItem(DK);
+    toast('New quotation #'+String(nx).padStart(3,'0'),'ok');
+    window.scrollTo({top:0,behavior:'smooth'});
+}
+
+/* ============================================================
+   PRINT & PDF
+   ============================================================ */
+function printQuotation(){
+    updatePV();
+    /* Brief flash to ensure print values are rendered */
+    requestAnimationFrame(()=>{ window.print(); });
+}
+
+function exportPDF(){
+    updatePV();
+    toast('Generating PDF...','inf');
+    const el=document.getElementById('qPage');
+    const opt={
+        margin:[12,14,10,14],
+        filename:'Quotation_'+(document.getElementById('qNo').value||'draft')+'.pdf',
+        image:{type:'jpeg',quality:0.98},
+        html2canvas:{scale:2,useCORS:true,letterRendering:true,backgroundColor:'#ffffff'},
+        jsPDF:{unit:'mm',format:'a4',orientation:'portrait'},
+        pagebreak:{mode:['avoid-all','css','legacy']}
+    };
+    html2pdf().set(opt).from(el).save().then(()=>{
+        toast('PDF downloaded','ok');
+    }).catch(()=>{
+        toast('PDF failed. Try Print instead.','err');
+    });
+}
+
+/* ============================================================
+   MODAL
+   ============================================================ */
+function openModal(){ renderSL(); document.getElementById('modal').classList.add('on'); }
+function closeModal(){ document.getElementById('modal').classList.remove('on'); }
+function renderSL(){
+    const s=getSL(), c=document.getElementById('savedList');
+    if(!s.length){ c.innerHTML='<div class="modal-empty"><i class="fas fa-inbox"></i>No saved quotations found.<br>Click "Save" to store your first quotation.</div>'; return; }
+    let h='';
+    s.forEach((x,i)=>{
+        const cl=(x.billTo||'').split('\n')[0]||'No client';
+        const dt=fmtDate(x.qDate)||'No date';
+        const ic=(x.items||[]).length;
+        h+=`<div class="si">
+            <div class="si-info"><div class="si-q">#${esc(x.qNo||'?')}</div><div class="si-d">${esc(cl)} &bull; ${dt} &bull; ${ic} item${ic!==1?'s':''}</div></div>
+            <div class="si-acts"><button class="si-load" onclick="loadSaved(${i})"><i class="fas fa-upload"></i> Load</button><button class="si-del" onclick="delSaved(${i})"><i class="fas fa-trash"></i></button></div>
+        </div>`;
+    });
+    c.innerHTML=h;
+}
+document.getElementById('modal').addEventListener('click',function(e){ if(e.target===this) closeModal(); });
+
+/* ============================================================
+   TOAST
+   ============================================================ */
+function toast(m,t){
+    t=t||'inf';
+    const ic={ok:'fa-check-circle',err:'fa-circle-exclamation',inf:'fa-circle-info'};
+    const el=document.createElement('div');
+    el.className='toast '+t;
+    el.innerHTML='<i class="fas '+(ic[t]||ic.inf)+'"></i> '+esc(m);
+    document.getElementById('toastC').appendChild(el);
+    setTimeout(()=>{ if(el.parentNode) el.parentNode.removeChild(el); },3000);
+}
+
+/* ============================================================
+   EVENTS
+   ============================================================ */
+['qNo','qDate','qExp'].forEach(id=>{
+    document.getElementById(id).addEventListener('input',function(){ schedAS(); updatePV(); });
+});
+['billTo','shipTo','termsTa'].forEach(id=>{
+    const el=document.getElementById(id);
+    el.addEventListener('input',function(){ autoH(this); schedAS(); updatePV(); });
+});
+document.addEventListener('keydown',function(e){
+    if(e.ctrlKey&&e.key==='s'){ e.preventDefault(); saveQuotation(); }
+    if(e.ctrlKey&&e.key==='p'){ e.preventDefault(); printQuotation(); }
+    if(e.key==='Escape') closeModal();
+});
+
+/* ============================================================
+   INIT
+   ============================================================ */
+(function(){
+    if(!loadDraft()){
+        items=JSON.parse(JSON.stringify(INIT_ITEMS));
+        renderItems();
+    }
+    updatePV();
+    loadImages();
+    setTimeout(autoHAll,80);
+    /* Hint toast for first-time users */
+    if(!localStorage.getItem(LOGO_K)){
+        setTimeout(()=>toast('Click the logo area to upload your company logo','inf'),1200);
+    }
+})();
+</script>
+</body>
+</html>
